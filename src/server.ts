@@ -1,8 +1,8 @@
 /* eslint-disable no-console */
 import { Server } from "http";
-import { app } from "./app";
 import { envVars } from "./app/config/env.config";
 import mongoose from "mongoose";
+import app from "./app";
 
 let server: Server;
 
