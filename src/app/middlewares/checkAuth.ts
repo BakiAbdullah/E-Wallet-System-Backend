@@ -33,9 +33,9 @@ export const checkAuth =
         );
       }
 
-      if (existingUser.isApproved === false) {
-        throw new AppError(httpStatus.BAD_REQUEST, "User is not approved!");
-      }
+      // if (existingUser.isApproved === false) {
+      //   throw new AppError(httpStatus.BAD_REQUEST, "User is not approved!");
+      // }
 
       if (
         existingUser.status === UserStatus.BLOCKED ||
@@ -57,7 +57,7 @@ export const checkAuth =
         );
       }
 
-      // Attach user information to the request object **********
+      // Attaching user information to the request object **********
       req.user = verifiedToken;
 
       next();

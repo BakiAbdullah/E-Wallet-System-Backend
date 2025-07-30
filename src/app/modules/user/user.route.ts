@@ -1,12 +1,13 @@
 import { Router } from "express";
 import { validateRequest } from "../../middlewares/validateRequest";
-import { createUserZodValidator } from "./user.validation";
+import { createUserZodValidator, Role } from "./user.validation";
 import { UserControllers } from "./user.controller";
+import { checkAuth } from "../../middlewares/checkAuth";
 
 const router = Router();
 
-router.post("/register", validateRequest(createUserZodValidator), UserControllers.createUser);
+router.post("/register", validateRequest(createUserZodValidator), UserControllers.registerUserWithWallet);
 
-router.get("/", UserControllers.getAllUsers);
+router.get("/", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 
 export const UserRoutes = router;

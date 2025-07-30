@@ -3,6 +3,7 @@ import { Server } from "http";
 import { envVars } from "./app/config/env.config";
 import mongoose from "mongoose";
 import app from "./app";
+import { seedAdminToDB } from "./app/utils/seedAdmin";
 
 let server: Server;
 
@@ -22,6 +23,7 @@ const serverON = async () => {
 // IIFE function
 (async () => {
   await serverON();
+  await seedAdminToDB();
 })();
 
 

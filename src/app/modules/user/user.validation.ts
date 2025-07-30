@@ -42,9 +42,9 @@ export const createUserZodValidator = z
       }),
 
     role: z.nativeEnum(Role).default(Role.USER),
-
     commissionRate: z.number().optional(),
     isApproved: z.boolean().optional(),
+    isVerified: z.boolean().optional(),
   })
   .superRefine((data, ctx) => {
     if (data.role === Role.AGENT) {
