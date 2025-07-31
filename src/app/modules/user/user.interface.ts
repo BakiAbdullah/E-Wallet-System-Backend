@@ -23,8 +23,10 @@ export interface IUser {
   status: UserStatus;
   address?: string;
   avatar?: string;
+  isVerified?: boolean; 
   // Agent-specific fields (conditionally required)
   isApproved?: boolean;
+  isDeleted?: boolean;
   commissionRate?: number;
   nid?: string; // Optional for USER, Required for AGENT
 }

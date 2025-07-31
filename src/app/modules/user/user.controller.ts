@@ -6,9 +6,9 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
 
-const createUser = catchAsync(
+const registerUserWithWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
+    const user = await UserServices.registerUserWithWallet(req.body);
     sendResponse(res, {
       statusCode: httpStatus.CREATED,
       success: true,
@@ -20,22 +20,19 @@ const createUser = catchAsync(
 
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query;
-    // const result = await UserServices.getAllUsers(
-    //   query as Record<string, string>
-    // );
+    
+    const result = await UserServices.getAllUsers();
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
       message: "All users retrieved successfully",
-    //   data: result.data,
-    //   meta: result.meta,
+      data: result
     });
   }
 );
 
-export const UserControllers = { 
-  createUser,
+export const UserControllers = {
+  registerUserWithWallet,
   getAllUsers,
 };
