@@ -77,9 +77,24 @@ const getMyWallet = catchAsync(
   }
 );
 
+const blockWallet = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { walletId } = req.params;
+    const result = await WalletServices.blockWallet(walletId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Wallet blocked successfully",
+      data: result,
+    });
+  }
+);
+
 export const WalletControllers = {
   topUpWallet,
   withdrawFromWallet,
   sendMoney,
   getMyWallet,
+  blockWallet,
 };

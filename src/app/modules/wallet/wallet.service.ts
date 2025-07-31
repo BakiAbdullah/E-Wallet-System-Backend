@@ -5,15 +5,8 @@ import mongoose from "mongoose";
 import { Wallet } from "./wallet.model";
 import { WalletStatus } from "./wallet.interface";
 import { Role } from "../user/user.validation";
-
-/*
-    ✅ 2. Wallet Features (Implement core wallet functionalities)
-    - Top-up wallet
-    - Withdraw from wallet
-    - Send money to another wallet
-    - View my wallet balance
-    - View transaction history
- */
+import { Transaction } from "../transaction/transaction.model";
+import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
 
 const topUpWallet = async (amount: number, userId: string) => {
   if (!amount || amount <= 0) {
@@ -27,10 +20,31 @@ const topUpWallet = async (amount: number, userId: string) => {
   try {
     session.startTransaction();
 
-    const wallet = await Wallet.findOne({ user: userId }).session(session);
+    const wallet = await Wallet.findOne({ user: userId })
+      .populate("user", "role")
+      .session(session);
+
     if (!wallet) {
       throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
     }
+
+    // ✅ AGENT can only top-up USER (not AGENT or ADMIN)
+    if ((wallet.user as any).role !== Role.USER) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Agents can only top-up regular user accounts"
+      );
+    }
+
+    // ✅ User can not top-up their own wallet
+    if ((wallet.user as any).role === Role.USER) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "User can not top-up their own wallet"
+      );
+    }
+
+
 
     if (wallet.isBlocked === WalletStatus.BLOCKED) {
       throw new AppError(
@@ -42,6 +56,22 @@ const topUpWallet = async (amount: number, userId: string) => {
     // Update wallet balance
     wallet.balance += amount;
     await wallet.save({ session });
+
+    // Create a transaction record (optional, if you want to track transactions)
+    await Transaction.create(
+      [
+        {
+          wallet: wallet._id,
+          newBalance: wallet.balance,
+          amount: amount,
+          transactionType: TransactionType.TOP_UP,
+          sender: userId,
+          receiver: userId, // In case of top-up, sender and receiver are the same
+          status: TransactionStatus.SUCCESS,
+        },
+      ],
+      { new: true, runValidators: true, session }
+    );
 
     await session.commitTransaction();
     session.endSession();
@@ -72,6 +102,11 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
 
     const wallet = await Wallet.findOne({ user: userId }).session(session);
 
+    if (!wallet) {
+      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+    }
+
+
     if (!amount || amount <= 0) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -79,9 +114,7 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
       );
     }
 
-    if (!wallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
-    }
+   
 
     if (wallet.balance < amount || wallet.balance === 0) {
       throw new AppError(
@@ -106,6 +139,22 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
     // Update wallet balance
     wallet.balance -= amount;
     await wallet.save({ session });
+
+    // Create a transaction record (optional, if you want to track transactions)
+    await Transaction.create(
+      [
+        {
+          wallet: wallet._id,
+          newBalance: wallet.balance,
+          amount: amount,
+          transactionType: TransactionType.WITHDRAW,
+          sender: userId,
+          receiver: userId, // In case of withdrawal, sender and receiver are the same
+          status: TransactionStatus.SUCCESS,
+        },
+      ],
+      { new: true, runValidators: true, session }
+    );
 
     await session.commitTransaction();
     session.endSession();
@@ -191,6 +240,22 @@ const sendMoney = async (
     await senderWallet.save({ session });
     await recipientWallet.save({ session });
 
+    // Create a transaction record (optional, if you want to track transactions)
+    await Transaction.create(
+      [
+        {
+          wallet: recipientWallet._id,
+          newBalance: recipientWallet.balance,
+          amount: amount,
+          transactionType: TransactionType.SEND,
+          sender: senderWallet._id,
+          receiver: recipientWallet.user,
+          status: TransactionStatus.SUCCESS,
+        },
+      ],
+      { new: true, runValidators: true, session }
+    );
+
     await session.commitTransaction();
     session.endSession();
     return {
@@ -216,9 +281,26 @@ const getMyWallet = async (userId: string) => {
   return wallet;
 };
 
+const blockWallet = async (walletId: string) => {
+  const wallet = await Wallet.findById(walletId);
+
+
+  if (!wallet) {
+    throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+  }
+
+  if (wallet.isBlocked === WalletStatus.BLOCKED) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Wallet is already blocked");
+  }
+
+  wallet.isBlocked = WalletStatus.BLOCKED;
+  await wallet.save();
+};
+
 export const WalletServices = {
   topUpWallet,
   withdrawFromWallet,
   sendMoney,
   getMyWallet,
+  blockWallet,
 };
