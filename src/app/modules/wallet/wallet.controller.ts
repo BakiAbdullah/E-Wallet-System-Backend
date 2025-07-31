@@ -12,7 +12,10 @@ const topUpWallet = catchAsync(
     const { balance } = req.body;
     const decodedToken = req.user as JwtPayload;
 
-    const result = await WalletServices.topUpWallet(balance, decodedToken.userId);
+    const result = await WalletServices.topUpWallet(
+      balance,
+      decodedToken.userId
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -25,12 +28,17 @@ const topUpWallet = catchAsync(
 
 const withdrawFromWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await WalletServices.withdrawFromWallet();
+    const { balance } = req.body;
+    const decodedToken = req.user as JwtPayload;
+    const result = await WalletServices.withdrawFromWallet(
+      balance,
+      decodedToken.userId
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Wallet withdrawn successfully",
+      message: "Withdraw money successfully",
       data: result,
     });
   }
@@ -38,7 +46,13 @@ const withdrawFromWallet = catchAsync(
 
 const sendMoney = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await WalletServices.sendMoney();
+    const { balance, recepientWalletID } = req.body;
+    const decodedToken = req.user as JwtPayload;
+    const result = await WalletServices.sendMoney(
+      decodedToken.userId,
+      recepientWalletID,
+      balance
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -51,12 +65,13 @@ const sendMoney = catchAsync(
 
 const getMyWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await WalletServices.getMyWallet();
+    const decodedToken = req.user as JwtPayload;
+    const result = await WalletServices.getMyWallet(decodedToken.userId);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Wallet topped up successfully",
+      message: "Wallet retrieved successfully",
       data: result,
     });
   }

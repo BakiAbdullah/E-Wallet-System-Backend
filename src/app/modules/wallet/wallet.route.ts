@@ -15,8 +15,13 @@ const router = Router();
 
 router.post("/top-up", checkAuth(Role.USER, Role.AGENT), validateRequest(topUpZodValidator), WalletControllers.topUpWallet);
 router.post("/withdraw", checkAuth(...Object.values(Role)), WalletControllers.withdrawFromWallet);
-router.post("/send-money", checkAuth(...Object.values(Role)), WalletControllers.sendMoney);
+router.post(
+  "/send-money",
+  checkAuth(Role.USER, Role.AGENT),
+  WalletControllers.sendMoney
+);
 router.get("/my-wallet", checkAuth(...Object.values(Role)), WalletControllers.getMyWallet);
+// router.get("/block-wallet/:walletId", checkAuth(Role.ADMIN), WalletControllers.blockWallet);
 // router.get("/transaction-history", checkAuth(...Object.values(Role)), WalletControllers.getTransactionHistory);
 
 export const WalletRoutes = router;
