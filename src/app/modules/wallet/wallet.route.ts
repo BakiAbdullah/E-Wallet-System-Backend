@@ -7,21 +7,32 @@ import { topUpZodValidator } from "./wallet.validation";
 
 const router = Router();
 
-// 🔼 POST /wallets/top-up
-// 🔽 POST /wallets/withdraw
-// 🔁 POST /wallets/send-money
-// 👁️ GET /wallets/my-wallet
-// 📜 GET /wallets/transaction-history
-
-router.post("/top-up", checkAuth(Role.USER, Role.AGENT), validateRequest(topUpZodValidator), WalletControllers.topUpWallet);
-router.post("/withdraw", checkAuth(...Object.values(Role)), WalletControllers.withdrawFromWallet);
+router.post(
+  "/top-up",
+  checkAuth(Role.AGENT),
+  validateRequest(topUpZodValidator),
+  WalletControllers.topUpWallet
+);
+router.post(
+  "/withdraw",
+  checkAuth(...Object.values(Role)),
+  WalletControllers.withdrawFromWallet
+);
 router.post(
   "/send-money",
   checkAuth(Role.USER, Role.AGENT),
   WalletControllers.sendMoney
 );
-router.get("/my-wallet", checkAuth(...Object.values(Role)), WalletControllers.getMyWallet);
-// router.get("/block-wallet/:walletId", checkAuth(Role.ADMIN), WalletControllers.blockWallet);
-// router.get("/transaction-history", checkAuth(...Object.values(Role)), WalletControllers.getTransactionHistory);
+router.get(
+  "/my-wallet",
+  checkAuth(...Object.values(Role)),
+  WalletControllers.getMyWallet
+);
+
+router.patch(
+  "/block/:walletId",
+  checkAuth(Role.ADMIN),
+  WalletControllers.blockWallet
+);
 
 export const WalletRoutes = router;
