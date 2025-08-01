@@ -37,13 +37,12 @@ const topUpWallet = async (amount: number, userId: string) => {
     }
 
     // ✅ User can not top-up their own wallet
-    if ((wallet.user as any).role === Role.USER) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "User can not top-up their own wallet"
-      );
-    }
-
+    // if ((wallet.user as any).role === Role.USER) {
+    //   throw new AppError(
+    //     httpStatus.FORBIDDEN,
+    //     "User can not top-up their own wallet"
+    //   );
+    // }
 
 
     if (wallet.isBlocked === WalletStatus.BLOCKED) {
@@ -57,7 +56,7 @@ const topUpWallet = async (amount: number, userId: string) => {
     wallet.balance += amount;
     await wallet.save({ session });
 
-    // Create a transaction record (optional, if you want to track transactions)
+    // Create a transaction record
     await Transaction.create(
       [
         {
@@ -283,7 +282,6 @@ const getMyWallet = async (userId: string) => {
 
 const blockWallet = async (walletId: string) => {
   const wallet = await Wallet.findById(walletId);
-
 
   if (!wallet) {
     throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
