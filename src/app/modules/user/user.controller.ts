@@ -18,6 +18,18 @@ const registerUserWithWallet = catchAsync(
   }
 );
 
+const registerAgentWithWallet = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const agent = await UserServices.registerAgentWithWallet(req.body);
+    sendResponse(res, {
+      statusCode: httpStatus.CREATED,
+      success: true,
+      message: "Agent created successfully",
+      data: agent,
+    });
+  }
+);
+
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     
@@ -34,5 +46,6 @@ const getAllUsers = catchAsync(
 
 export const UserControllers = {
   registerUserWithWallet,
+  registerAgentWithWallet,
   getAllUsers,
 };

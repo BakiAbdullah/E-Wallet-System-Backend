@@ -9,15 +9,14 @@ import { WalletStatus } from "../wallet/wallet.interface";
 
 const Initial_Balance = 50;
 
-const registerUserWithWallet = async (payload: Partial<IUser>) => {
-    const session = await User.startSession();
-    session.startTransaction();
+const createUser = async (payload: Partial<IUser>, role: Role) => {
+  const session = await User.startSession();
+  session.startTransaction();
 
   try {
     const { email, password, ...rest } = payload;
 
     const existingUser = await User.findOne({ email }).session(session);
-
     if (existingUser) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
@@ -36,43 +35,50 @@ const registerUserWithWallet = async (payload: Partial<IUser>) => {
           ...rest,
           email,
           password: encryptedPassword,
+          role,
         },
       ],
       { session }
     );
 
-    // Create wallet for the user
-    if (user[0].role === Role.USER || user[0].role === Role.AGENT) {
+    if (role === Role.USER || role === Role.AGENT) {
       await Wallet.create(
         [
           {
             user: user[0]._id,
             balance: Initial_Balance,
-            isBlocked: WalletStatus.ACTIVE, // Default status
+            isBlocked: WalletStatus.ACTIVE,
           },
         ],
         { session }
       );
     }
 
-    // Commit the transaction
     await session.commitTransaction();
     session.endSession();
     return user[0];
   } catch (error) {
-    // Rollback the transaction in case of error
     await session.abortTransaction();
     session.endSession();
     throw error;
   }
 };
 
-const getAllUsers = async () => { 
+const registerUserWithWallet = async (payload: Partial<IUser>) => {
+  return await createUser(payload, Role.USER);
+};
+
+const registerAgentWithWallet = async (payload: Partial<IUser>) => {
+  return await createUser(payload, Role.AGENT);
+};
+
+const getAllUsers = async () => {
   const users = await User.find({}).select("-password");
   return users;
 };
 
 export const UserServices = {
   registerUserWithWallet,
+  registerAgentWithWallet,
   getAllUsers,
 };

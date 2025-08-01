@@ -36,15 +36,6 @@ const topUpWallet = async (amount: number, userId: string) => {
       );
     }
 
-    // ✅ User can not top-up their own wallet
-    // if ((wallet.user as any).role === Role.USER) {
-    //   throw new AppError(
-    //     httpStatus.FORBIDDEN,
-    //     "User can not top-up their own wallet"
-    //   );
-    // }
-
-
     if (wallet.isBlocked === WalletStatus.BLOCKED) {
       throw new AppError(
         httpStatus.FORBIDDEN,

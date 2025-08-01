@@ -46,22 +46,4 @@ export const createUserZodValidator = z
     isApproved: z.boolean().optional(),
     isVerified: z.boolean().optional(),
   })
-  .superRefine((data, ctx) => {
-    if (data.role === Role.AGENT) {
-      if (data.commissionRate === undefined) {
-        ctx.addIssue({
-          path: ["commissionRate"],
-          code: z.ZodIssueCode.custom,
-          message: "commissionRate is required for agents",
-        });
-      }
-
-      if (data.isApproved === undefined) {
-        ctx.addIssue({
-          path: ["isApproved"],
-          code: z.ZodIssueCode.custom,
-          message: "isApproved is required for agents",
-        });
-      }
-    }
-  });
+  

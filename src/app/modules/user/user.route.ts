@@ -8,6 +8,8 @@ const router = Router();
 
 router.post("/register", validateRequest(createUserZodValidator), UserControllers.registerUserWithWallet);
 
+router.post("/register-agent", validateRequest(createUserZodValidator), UserControllers.registerAgentWithWallet);
+
 router.get("/", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 
 export const UserRoutes = router;

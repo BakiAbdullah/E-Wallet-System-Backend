@@ -16,10 +16,9 @@ const userSchema = new Schema<IUser>(
     avatar: { type: String, default: "" },
     address: { type: String },
     isDeleted: { type: Boolean, default: false },
+    isVerified: { type: Boolean, default: false },
     isApproved: { type: Boolean, default: false },
-    isVerified: { type: Boolean, default: false }, 
-    commissionRate: { type: Number, default: 0, min: 0, max: 100 },
-    nid: { type: String },
+    commissionRate: { type: Number, min: 0, max: 100 },
   },
   {
     timestamps: true,
@@ -27,16 +26,18 @@ const userSchema = new Schema<IUser>(
   }
 );
 
-// 🧠 Middleware: Only agents can have commissionRate and isApproved
+// If the role is AGENT, commissionRate must be defined
 userSchema.pre("save", function (next) {
+  if (!this.role) this.role = Role.USER;
+
   if (this.role === Role.AGENT) {
-    if (!this.nid) {
-      return next(new Error("NID is required for agents"));
+    if (this.commissionRate === undefined) {
+      return next(new Error("Agent must have a commission rate"));
     }
   } else {
-    // Non-agents: clean up agent-only fields
-    this.isApproved = undefined;
     this.commissionRate = undefined;
+    this.isApproved = undefined;
+    this.isVerified = undefined;
   }
 
   next();

@@ -43,22 +43,6 @@ passport.use(
           return done("User does not exist!");
         }
 
-        // const isGoogleAuthenticated = existingUser.auths.some(
-        //   (providerObjs) => providerObjs.provider === "google"
-        // );
-
-        // if (isGoogleAuthenticated && !existingUser.password) {
-        //   return done(null, false, {
-        //     message:
-        //       "Please login with Google! You have registered with Google login. If you want to login with email and password, please at first login with Google and set a password for your Gmail.",
-        //   });
-        // }
-        // if (isGoogleAuthenticated) {
-        //   return done(
-        //     "Please login with Google! You have registered with Google login. If you want to login with email and password, please at first login with Google and set a password for your Gmail."
-        //   );
-        // }
-
         const isPasswordMatched = await bcryptjs.compare(
           password as string,
           existingUser.password as string
