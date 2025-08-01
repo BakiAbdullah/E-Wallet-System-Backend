@@ -44,8 +44,37 @@ const getAllUsers = catchAsync(
   }
 );
 
+const approveAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const agentId = req.params.id;
+    const result = await UserServices.approveAgent(agentId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent approved successfully!",
+      data: result,
+    });
+  }
+);
+
+const getAllAgents = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserServices.getAllAgents();
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "All Agents retrieved successfully",
+      data: result
+    });
+  }
+);
+
 export const UserControllers = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
+  getAllAgents,
+  approveAgent,
 };

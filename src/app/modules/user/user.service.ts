@@ -77,8 +77,25 @@ const getAllUsers = async () => {
   return users;
 };
 
+const getAllAgents = async () => {
+  const users = await User.find({ role: Role.AGENT }).select("-password");
+  return users;
+};
+
+const approveAgent = async (agentId: string) => {
+  const agent = await User.findById(agentId);
+  if (!agent) {
+    throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+  }
+  agent.isApproved = true;
+  await agent.save();
+  return agent;
+};
+
 export const UserServices = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
+  getAllAgents,
+  approveAgent,
 };

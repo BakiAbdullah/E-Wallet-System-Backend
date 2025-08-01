@@ -7,8 +7,9 @@ import { WalletStatus } from "./wallet.interface";
 import { Role } from "../user/user.validation";
 import { Transaction } from "../transaction/transaction.model";
 import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
+import { IUser } from "../user/user.interface";
 
-const topUpWallet = async (amount: number, userId: string) => {
+const topUpWallet = async (amount: number, agentId: string, userId: string) => {
   if (!amount || amount <= 0) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -21,18 +22,24 @@ const topUpWallet = async (amount: number, userId: string) => {
     session.startTransaction();
 
     const wallet = await Wallet.findOne({ user: userId })
-      .populate("user", "role")
+      .populate<{ user: IUser }>("user")
       .session(session);
+    const agentWallet = await Wallet.findOne({ user: agentId }).session(
+      session
+    );
+    if (!agentWallet) {
+      throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+    }
 
     if (!wallet) {
       throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
     }
 
-    // ✅ AGENT can only top-up USER (not AGENT or ADMIN)
-    if ((wallet.user as any).role !== Role.USER) {
+    // Check if the user is an agent and not approved
+    if (wallet.user.role === Role.AGENT && wallet.user.isApproved === false) {
       throw new AppError(
         httpStatus.FORBIDDEN,
-        "Agents can only top-up regular user accounts"
+        "Your agent account is not approved yet, you can not perform any transactions!"
       );
     }
 
@@ -43,8 +50,36 @@ const topUpWallet = async (amount: number, userId: string) => {
       );
     }
 
-    // Update wallet balance
+    if (wallet.balance - amount < 0) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance!");
+    }
+
+    // Check if agent wallet is blocked
+    if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Agent wallet is blocked, you can not withdraw money!"
+      );
+    }
+
+    // Top up receiver's wallet
     wallet.balance += amount;
+
+    // If agent is not topping up their own wallet
+    if (agentWallet._id.toString() !== wallet._id.toString()) {
+      // Subtract from agent's wallet
+      agentWallet.balance -= amount;
+
+      // Check for insufficient balance
+      if (agentWallet.balance < 0) {
+        throw new AppError(
+          httpStatus.BAD_REQUEST,
+          "Agent has insufficient balance!"
+        );
+      }
+
+      await agentWallet.save({ session });
+    }
     await wallet.save({ session });
 
     // Create a transaction record
@@ -55,7 +90,7 @@ const topUpWallet = async (amount: number, userId: string) => {
           newBalance: wallet.balance,
           amount: amount,
           transactionType: TransactionType.TOP_UP,
-          sender: userId,
+          sender: agentId,
           receiver: userId, // In case of top-up, sender and receiver are the same
           status: TransactionStatus.SUCCESS,
         },
@@ -77,7 +112,12 @@ const topUpWallet = async (amount: number, userId: string) => {
   }
 };
 
-const withdrawFromWallet = async (amount: number, userId: string) => {
+const withdrawFromWallet = async (
+  amount: number,
+  agentId: string,
+  userId: string
+) => {
+
   if (!amount || amount <= 0) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -90,12 +130,18 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
   try {
     session.startTransaction();
 
-    const wallet = await Wallet.findOne({ user: userId }).session(session);
+    const userWallet = await Wallet.findOne({ user: userId }).session(session);
+    const agentWallet = await Wallet.findOne({ user: agentId }).session(
+      session
+    );
 
-    if (!wallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+    if (!agentWallet) {
+      throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
     }
 
+    if (!userWallet) {
+      throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+    }
 
     if (!amount || amount <= 0) {
       throw new AppError(
@@ -104,9 +150,7 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
       );
     }
 
-   
-
-    if (wallet.balance < amount || wallet.balance === 0) {
+    if (userWallet.balance < amount || userWallet.balance === 0) {
       throw new AppError(
         httpStatus.BAD_REQUEST,
         "You do not have sufficient balance!"
@@ -119,27 +163,45 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
       );
     }
 
-    if (wallet.isBlocked === WalletStatus.BLOCKED) {
+    if (userWallet.isBlocked === WalletStatus.BLOCKED) {
       throw new AppError(
         httpStatus.FORBIDDEN,
         "Wallet is blocked, you can not withdraw money!"
       );
     }
 
+    // Check if agent wallet is blocked
+    if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Agent wallet is blocked, you can not withdraw money!"
+      );
+    }
+
+    // Check if the agent and user are the same by comparing IDs
+    if (userId === agentId) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "You can not withdraw money to your own wallet!"
+      );
+    }
+
     // Update wallet balance
-    wallet.balance -= amount;
-    await wallet.save({ session });
+    userWallet.balance -= amount;
+    agentWallet.balance += amount;
+    await userWallet.save({ session });
+    await agentWallet.save({ session });
 
     // Create a transaction record (optional, if you want to track transactions)
     await Transaction.create(
       [
         {
-          wallet: wallet._id,
-          newBalance: wallet.balance,
+          wallet: userWallet._id,
+          newBalance: userWallet.balance,
           amount: amount,
           transactionType: TransactionType.WITHDRAW,
           sender: userId,
-          receiver: userId, // In case of withdrawal, sender and receiver are the same
+          receiver: agentId, // In case of withdrawal, sender and receiver are the same
           status: TransactionStatus.SUCCESS,
         },
       ],
@@ -148,7 +210,7 @@ const withdrawFromWallet = async (amount: number, userId: string) => {
 
     await session.commitTransaction();
     session.endSession();
-    return { message: "Cash Out successful", balance: wallet.balance };
+    return { message: "Cash Out successful", balance: userWallet.balance };
   } catch (error: any) {
     await session.abortTransaction();
     throw new AppError(
@@ -164,6 +226,7 @@ const sendMoney = async (
   recipientWalletId: string,
   amount: number
 ) => {
+
   if (!amount || amount <= 0) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -216,6 +279,7 @@ const sendMoney = async (
       throw new AppError(httpStatus.NOT_FOUND, "Recipient wallet not found");
     }
 
+    // Check if recipient wallet is blocked
     if (recipientWallet.isBlocked === WalletStatus.BLOCKED) {
       throw new AppError(
         httpStatus.FORBIDDEN,
@@ -238,13 +302,15 @@ const sendMoney = async (
           newBalance: recipientWallet.balance,
           amount: amount,
           transactionType: TransactionType.SEND,
-          sender: senderWallet._id,
-          receiver: recipientWallet.user,
+          sender: senderWalletId,
+          receiver: recipientWallet.user ,
           status: TransactionStatus.SUCCESS,
         },
       ],
       { new: true, runValidators: true, session }
     );
+
+    // console.log({senderWallet});
 
     await session.commitTransaction();
     session.endSession();

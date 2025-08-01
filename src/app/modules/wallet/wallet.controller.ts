@@ -9,11 +9,12 @@ import { JwtPayload } from "jsonwebtoken";
 
 const topUpWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { balance } = req.body;
+    const { balance, agentId } = req.body;
     const decodedToken = req.user as JwtPayload;
 
     const result = await WalletServices.topUpWallet(
       balance,
+      agentId,
       decodedToken.userId
     );
 
@@ -28,10 +29,11 @@ const topUpWallet = catchAsync(
 
 const withdrawFromWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { balance } = req.body;
+    const { balance, agentId } = req.body;
     const decodedToken = req.user as JwtPayload;
     const result = await WalletServices.withdrawFromWallet(
       balance,
+      agentId,
       decodedToken.userId
     );
 
