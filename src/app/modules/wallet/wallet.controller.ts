@@ -93,10 +93,25 @@ const blockWallet = catchAsync(
   }
 );
 
+const unBlockWallet = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const { walletId } = req.params;
+    const result = await WalletServices.unBlockWallet(walletId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Wallet unblocked successfully",
+      data: result,
+    });
+  }
+);
+
 export const WalletControllers = {
   topUpWallet,
   withdrawFromWallet,
   sendMoney,
   getMyWallet,
   blockWallet,
+  unBlockWallet,
 };

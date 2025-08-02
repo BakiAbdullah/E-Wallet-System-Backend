@@ -11,6 +11,7 @@ import { usersSearchFields } from "./user.constant";
 
 const Initial_Balance = 50;
 
+// Create a new user with a specific role and wallet
 const createUser = async (payload: Partial<IUser>, role: Role) => {
   const session = await User.startSession();
   session.startTransaction();
@@ -66,14 +67,17 @@ const createUser = async (payload: Partial<IUser>, role: Role) => {
   }
 };
 
+// Register a user with a wallet
 const registerUserWithWallet = async (payload: Partial<IUser>) => {
   return await createUser(payload, Role.USER);
 };
 
+// Register an agent with a wallet
 const registerAgentWithWallet = async (payload: Partial<IUser>) => {
   return await createUser(payload, Role.AGENT);
 };
 
+// Retrieve all users with pagination, filtering, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
 
    const queryBuilder = new QueryBuilder(
@@ -98,11 +102,13 @@ const getAllUsers = async (query: Record<string, string>) => {
    };
 };
 
+// Retrieve all agents
 const getAllAgents = async () => {
   const users = await User.find({ role: Role.AGENT }).select("-password");
   return users;
 };
 
+// Approve an agent
 const approveAgent = async (agentId: string) => {
   const agent = await User.findById(agentId);
   if (!agent) {
@@ -113,10 +119,22 @@ const approveAgent = async (agentId: string) => {
   return agent;
 };
 
+// Reject an agent
+const rejectAgent = async (agentId: string) => {
+  const agent = await User.findById(agentId);
+  if (!agent) {
+    throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
+  }
+  agent.isApproved = false;
+  await agent.save();
+  return agent;
+};
+
 export const UserServices = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
   getAllAgents,
   approveAgent,
+  rejectAgent,
 };
