@@ -9,7 +9,8 @@ import { JwtPayload } from "jsonwebtoken";
 
 const getAllTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const result = await TransactionService.getAllTransactionHistory();
+    const query = req.query;
+    const result = await TransactionService.getAllTransactionHistory(query as Record<string, string>);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,

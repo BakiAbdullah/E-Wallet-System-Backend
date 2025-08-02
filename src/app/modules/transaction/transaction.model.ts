@@ -14,6 +14,7 @@ const transactionSchema = new Schema<ITransaction>(
       enum: Object.values(TransactionType),
       required: true,
     },
+    transactionId: { type: String, unique: true },
     sender: { type: Schema.Types.ObjectId, ref: "User", required: true },
     receiver: { type: Schema.Types.ObjectId, ref: "User", required: true },
     wallet: { type: Schema.Types.ObjectId, ref: "Wallet", required: true },

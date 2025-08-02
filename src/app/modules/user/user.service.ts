@@ -6,6 +6,8 @@ import bcryptjs from "bcryptjs";
 import { envVars } from "../../config/env.config";
 import { Wallet } from "../wallet/wallet.model";
 import { WalletStatus } from "../wallet/wallet.interface";
+import { QueryBuilder } from "../../utils/QueryBuilder";
+import { usersSearchFields } from "./user.constant";
 
 const Initial_Balance = 50;
 
@@ -72,9 +74,29 @@ const registerAgentWithWallet = async (payload: Partial<IUser>) => {
   return await createUser(payload, Role.AGENT);
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({}).select("-password");
-  return users;
+const getAllUsers = async (query: Record<string, string>) => {
+
+   const queryBuilder = new QueryBuilder(
+     User.find(),
+     query
+   );
+   const usersData = queryBuilder
+     .filter()
+     .search(usersSearchFields)
+     .sort()
+     .fields()
+     .paginate();
+
+   const [data, meta] = await Promise.all([
+     usersData.build(),
+     queryBuilder.getMeta(),
+   ]);
+
+   return {
+     data,
+     meta,
+   };
+  
 };
 
 const getAllAgents = async () => {

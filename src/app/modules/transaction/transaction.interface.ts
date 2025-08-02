@@ -19,6 +19,7 @@ export interface ITransaction {
   newBalance: number;
   amount: number;
   transactionType: TransactionType;
+  transactionId: string;
   sender: Types.ObjectId | string;
   receiver: Types.ObjectId | string;
   wallet: Types.ObjectId | string;

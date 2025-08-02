@@ -8,8 +8,11 @@ import { Role } from "../user/user.validation";
 import { Transaction } from "../transaction/transaction.model";
 import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
 import { IUser } from "../user/user.interface";
+import { getTransactionId } from "../../utils/getTransactionID";
 
 const topUpWallet = async (amount: number, agentId: string, userId: string) => {
+  const transactionId = getTransactionId();
+
   if (!amount || amount <= 0) {
     throw new AppError(
       httpStatus.BAD_REQUEST,
@@ -90,6 +93,7 @@ const topUpWallet = async (amount: number, agentId: string, userId: string) => {
           newBalance: wallet.balance,
           amount: amount,
           transactionType: TransactionType.TOP_UP,
+          transactionId: transactionId,
           sender: agentId,
           receiver: userId, // In case of top-up, sender and receiver are the same
           status: TransactionStatus.SUCCESS,
@@ -117,6 +121,8 @@ const withdrawFromWallet = async (
   agentId: string,
   userId: string
 ) => {
+
+  const transactionId = getTransactionId();
 
   if (!amount || amount <= 0) {
     throw new AppError(
@@ -200,6 +206,7 @@ const withdrawFromWallet = async (
           newBalance: userWallet.balance,
           amount: amount,
           transactionType: TransactionType.WITHDRAW,
+          transactionId: transactionId,
           sender: userId,
           receiver: agentId, // In case of withdrawal, sender and receiver are the same
           status: TransactionStatus.SUCCESS,
@@ -226,6 +233,7 @@ const sendMoney = async (
   recipientWalletId: string,
   amount: number
 ) => {
+  const transactionId = getTransactionId();
 
   if (!amount || amount <= 0) {
     throw new AppError(
@@ -302,8 +310,9 @@ const sendMoney = async (
           newBalance: recipientWallet.balance,
           amount: amount,
           transactionType: TransactionType.SEND,
+          transactionId: transactionId,
           sender: senderWalletId,
-          receiver: recipientWallet.user ,
+          receiver: recipientWallet.user,
           status: TransactionStatus.SUCCESS,
         },
       ],
