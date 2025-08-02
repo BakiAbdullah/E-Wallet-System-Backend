@@ -86,7 +86,7 @@ BCRYPT_SALT_ROUNDS=10
 
 ---
 ## 📬 Postman Collection (Download and Import)
-### API Link: https://drive.google.com/file/d/1B2IFfSgUKJdyX6U1tXqtWOWqBJ8cW2lK/view?usp=sharing
+### API Link: https://drive.google.com/file/d/1KIZeuOZVFNmeB_PwSetaCnDNjkkn70BY/view?usp=sharing
 ## 🧩 API Endpoints
 
 | Method | Endpoint                           |   Description                          |
