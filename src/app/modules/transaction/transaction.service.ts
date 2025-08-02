@@ -6,14 +6,6 @@ import { QueryBuilder } from "../../utils/QueryBuilder";
 
 // Admin all transaction history retrieval
 const getAllTransactionHistory = async (query: Record<string, string>) => {
-  // const result = await Transaction.find()
-  //   .populate("sender", "name email role -_id")
-  //   .populate("receiver", "name email role -_id")
-  //   .populate("wallet", "balance -_id");
-  // if (!result) {
-  //   throw new AppError(httpStatus.NOT_FOUND, "Transaction history not found");
-  // }
-  // return result;
 
   const queryBuilder = new QueryBuilder(
     Transaction.find()

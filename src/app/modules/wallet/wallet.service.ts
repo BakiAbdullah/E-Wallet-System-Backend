@@ -10,6 +10,7 @@ import { TransactionStatus, TransactionType } from "../transaction/transaction.i
 import { IUser } from "../user/user.interface";
 import { getTransactionId } from "../../utils/getTransactionID";
 
+// Top up a user's wallet
 const topUpWallet = async (amount: number, agentId: string, userId: string) => {
   const transactionId = getTransactionId();
 
@@ -116,6 +117,7 @@ const topUpWallet = async (amount: number, agentId: string, userId: string) => {
   }
 };
 
+// Withdraw money from a user's wallet
 const withdrawFromWallet = async (
   amount: number,
   agentId: string,
@@ -228,6 +230,7 @@ const withdrawFromWallet = async (
   }
 };
 
+// Send money from one wallet to another
 const sendMoney = async (
   senderWalletId: string,
   recipientWalletId: string,
@@ -338,6 +341,7 @@ const sendMoney = async (
   }
 };
 
+// Retrieve the authenticated user's wallet
 const getMyWallet = async (userId: string) => {
   const wallet = await Wallet.findOne({ user: userId });
   if (!wallet) {
@@ -346,6 +350,7 @@ const getMyWallet = async (userId: string) => {
   return wallet;
 };
 
+// Block a user's wallet
 const blockWallet = async (walletId: string) => {
   const wallet = await Wallet.findById(walletId);
 
@@ -361,10 +366,27 @@ const blockWallet = async (walletId: string) => {
   await wallet.save();
 };
 
+// Unblock a user's wallet
+const unBlockWallet = async (walletId: string) => {
+  const wallet = await Wallet.findById(walletId);
+
+  if (!wallet) {
+    throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+  }
+
+  if (wallet.isBlocked === WalletStatus.ACTIVE) {
+    throw new AppError(httpStatus.BAD_REQUEST, "Wallet is already active");
+  }
+
+  wallet.isBlocked = WalletStatus.ACTIVE;
+  await wallet.save();
+};
+
 export const WalletServices = {
   topUpWallet,
   withdrawFromWallet,
   sendMoney,
   getMyWallet,
   blockWallet,
+  unBlockWallet,
 };

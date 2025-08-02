@@ -14,6 +14,7 @@ router.get("/", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 router.post("/register-agent", validateRequest(createUserZodValidator), UserControllers.registerAgentWithWallet);
 router.get("/agents", checkAuth(Role.ADMIN), UserControllers.getAllAgents);
 router.patch("/agent/:id/approve", checkAuth(Role.ADMIN), UserControllers.approveAgent);
+router.patch("/agent/:id/reject", checkAuth(Role.ADMIN), UserControllers.rejectAgent);
 
 
 export const UserRoutes = router;

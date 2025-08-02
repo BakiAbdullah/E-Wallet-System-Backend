@@ -6,6 +6,7 @@ import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
 
+// Register a user with a wallet
 const registerUserWithWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserServices.registerUserWithWallet(req.body);
@@ -18,6 +19,7 @@ const registerUserWithWallet = catchAsync(
   }
 );
 
+// Register an agent with a wallet
 const registerAgentWithWallet = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const agent = await UserServices.registerAgentWithWallet(req.body);
@@ -30,6 +32,7 @@ const registerAgentWithWallet = catchAsync(
   }
 );
 
+// Retrieve all users
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
@@ -46,6 +49,7 @@ const getAllUsers = catchAsync(
   }
 );
 
+// Approve an agent to perform actions
 const approveAgent = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const agentId = req.params.id;
@@ -60,6 +64,22 @@ const approveAgent = catchAsync(
   }
 );
 
+// Reject an agent
+const rejectAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const agentId = req.params.id;
+    const result = await UserServices.rejectAgent(agentId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Agent Rejected!",
+      data: result,
+    });
+  }
+);
+
+// Retrieve all agents
 const getAllAgents = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const result = await UserServices.getAllAgents();
@@ -79,4 +99,5 @@ export const UserControllers = {
   getAllUsers,
   getAllAgents,
   approveAgent,
+  rejectAgent,
 };

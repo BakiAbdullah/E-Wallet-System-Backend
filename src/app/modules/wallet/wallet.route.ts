@@ -37,4 +37,10 @@ router.patch(
   WalletControllers.blockWallet
 );
 
+router.patch(
+  "/unblock/:walletId",
+  checkAuth(Role.ADMIN),
+  WalletControllers.unBlockWallet
+);
+
 export const WalletRoutes = router;
