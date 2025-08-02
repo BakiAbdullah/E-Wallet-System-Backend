@@ -10,6 +10,13 @@ router.get(
   checkAuth(Role.ADMIN),
   TransactionControllers.getAllTransactionHistory
 );
+
+router.get(
+  "/history/me",
+  checkAuth(Role.AGENT, Role.USER),
+  TransactionControllers.getMyTransactionHistory
+);
+
 router.get(
   "/history/:id",
   checkAuth(Role.ADMIN),
