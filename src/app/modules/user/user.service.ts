@@ -96,7 +96,6 @@ const getAllUsers = async (query: Record<string, string>) => {
      data,
      meta,
    };
-  
 };
 
 const getAllAgents = async () => {
