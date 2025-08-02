@@ -6,7 +6,10 @@ import { Wallet } from "./wallet.model";
 import { WalletStatus } from "./wallet.interface";
 import { Role } from "../user/user.validation";
 import { Transaction } from "../transaction/transaction.model";
-import { TransactionStatus, TransactionType } from "../transaction/transaction.interface";
+import {
+  TransactionStatus,
+  TransactionType,
+} from "../transaction/transaction.interface";
 import { IUser } from "../user/user.interface";
 import { getTransactionId } from "../../utils/getTransactionID";
 
@@ -28,7 +31,8 @@ const topUpWallet = async (amount: number, agentId: string, userId: string) => {
     const wallet = await Wallet.findOne({ user: userId })
       .populate<{ user: IUser }>("user")
       .session(session);
-    const agentWallet = await Wallet.findOne({ user: agentId }).session(
+    // agent wallet
+    const agentWallet = await Wallet.findOne({ user: agentId }).populate<{ user: IUser }>("user").session(
       session
     );
     if (!agentWallet) {
@@ -46,6 +50,19 @@ const topUpWallet = async (amount: number, agentId: string, userId: string) => {
         "Your agent account is not approved yet, you can not perform any transactions!"
       );
     }
+
+
+    //! User can not top up Agent's wallet
+    if (
+      wallet.user.role === Role.USER && 
+      agentWallet.user?.role === Role.AGENT
+    ) {
+      throw new AppError(
+        httpStatus.FORBIDDEN,
+        "Users are not allowed to top up an agent's wallet!"
+      );
+    }
+
 
     if (wallet.isBlocked === WalletStatus.BLOCKED) {
       throw new AppError(
@@ -123,7 +140,6 @@ const withdrawFromWallet = async (
   agentId: string,
   userId: string
 ) => {
-
   const transactionId = getTransactionId();
 
   if (!amount || amount <= 0) {
@@ -343,7 +359,7 @@ const sendMoney = async (
 
 // Retrieve the authenticated user's wallet
 const getMyWallet = async (userId: string) => {
-  const wallet = await Wallet.findOne({ user: userId });
+  const wallet = await Wallet.findOne({ user: userId }).populate<{ user: IUser }>("user");
   if (!wallet) {
     throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
   }
