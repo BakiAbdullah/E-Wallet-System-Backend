@@ -38,7 +38,7 @@ app.use(express.urlencoded({ extended: true }));
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 30, 
+  limit: 60, 
 });
 
 app.use(limiter);
