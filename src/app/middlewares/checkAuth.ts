@@ -10,7 +10,7 @@ export const checkAuth =
   (...authRoles: string[]) =>
   async (req: Request, res: Response, next: NextFunction) => {
     try {
-      const accessToken = await req.headers.authorization;
+      const accessToken = await req.headers.authorization || req.cookies.accessToken; //! Get token from browser cookies also
       if (!accessToken) {
         throw new AppError(httpStatus.UNAUTHORIZED, "Access token is required");
       }
