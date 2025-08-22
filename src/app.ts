@@ -29,16 +29,17 @@ app.use(
   })
 );
 
+app.use(express.json());
 app.use(passport.initialize());
 app.use(passport.session());
 app.use(cookieParser());
-app.use(express.json());
+app.set("trust proxy", 1); //* Trust first proxy for secure cookies in production
 app.use(express.urlencoded({ extended: true }));
 
 // Rate limiting to prevent abuse
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  limit: 60, 
+  limit: 260, 
 });
 
 app.use(limiter);
