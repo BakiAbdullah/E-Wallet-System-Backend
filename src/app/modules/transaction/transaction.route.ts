@@ -18,8 +18,8 @@ router.get(
 );
 
 router.get(
-  "/history/:id",
-  checkAuth(Role.ADMIN),
+  "/history/user/:walletId",
+  checkAuth(...Object.values(Role)),
   TransactionControllers.getUserTransactionHistory
 );
 

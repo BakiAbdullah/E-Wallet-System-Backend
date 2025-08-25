@@ -10,7 +10,9 @@ import { JwtPayload } from "jsonwebtoken";
 const getAllTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
-    const result = await TransactionService.getAllTransactionHistory(query as Record<string, string>);
+    const result = await TransactionService.getAllTransactionHistory(
+      query as Record<string, string>
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -20,11 +22,16 @@ const getAllTransactionHistory = catchAsync(
     });
   }
 );
+
 const getUserTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { id } = req.params;
+    const { walletId } = req.params;
+    const query = req.query;
 
-    const result = await TransactionService.getUserTransactionHistory(id);
+    const result = await TransactionService.getUserTransactionHistory(
+      walletId,
+      query as Record<string, string>
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
@@ -37,9 +44,11 @@ const getUserTransactionHistory = catchAsync(
 
 const getMyTransactionHistory = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const decodedToken = req.user as JwtPayload
+    const decodedToken = req.user as JwtPayload;
 
-    const result = await TransactionService.getMyTransactionHistory(decodedToken.userId);
+    const result = await TransactionService.getMyTransactionHistory(
+      decodedToken.userId
+    );
 
     sendResponse(res, {
       statusCode: httpStatus.OK,

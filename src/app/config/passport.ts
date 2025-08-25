@@ -39,9 +39,9 @@ passport.use(
           });
         }
 
-        if (!existingUser) {
-          return done("User does not exist!");
-        }
+        // if (!existingUser) {
+        //   return done("User does not exist!");
+        // }
 
         const isPasswordMatched = await bcryptjs.compare(
           password as string,
