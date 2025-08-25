@@ -31,6 +31,11 @@ router.get(
   WalletControllers.getMyWallet
 );
 
+router.get(
+  "/users-wallet/:userId",
+  WalletControllers.getUserWallet
+);
+
 router.patch(
   "/block/:walletId",
   checkAuth(Role.ADMIN),

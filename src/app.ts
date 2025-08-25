@@ -41,7 +41,6 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   limit: 260, 
 });
-
 app.use(limiter);
 
 // Base Route

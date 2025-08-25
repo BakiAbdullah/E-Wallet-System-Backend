@@ -12,10 +12,10 @@ import AppError from "../../errors/AppError";
 import { createUserTokens } from "../../utils/getUserTokens";
 import { setAuthCookieUtil } from "../../utils/setCookies";
 
-
 const credentialsLogin = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     passport.authenticate("local", async (err: any, user: any, info: any) => {
+    
       if (err) {
         return next(new AppError(err.statusCode || 401, err.message));
       }
@@ -45,6 +45,28 @@ const credentialsLogin = catchAsync(
   }
 );
 
+const logout = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    res.clearCookie("accessToken", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    });
+    res.clearCookie("refreshToken", {
+      httpOnly: true,
+      secure: false,
+      sameSite: "lax",
+    });
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User logged out successfully!",
+      data: null,
+    });
+  }
+);
+
 const changePassword = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const oldPassword = req.body.oldPassword;
@@ -66,9 +88,34 @@ const changePassword = catchAsync(
   }
 );
 
+const updateProfile = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const name = req.body.name;
+    const phone = req.body.phone;
+    const oldPassword = req.body.oldPassword;
+    const newPassword = req.body.newPassword;
+    const decodedToken = req.user as JwtPayload;
 
+    await AuthServices.updateProfile(
+      name,
+      phone,
+      oldPassword,
+      newPassword,
+      decodedToken as JwtPayload
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "Profile updated successfully!",
+      data: null,
+    });
+  }
+);
 
 export const AuthControllers = {
   credentialsLogin,
-  changePassword
+  logout,
+  changePassword,
+  updateProfile,
 };

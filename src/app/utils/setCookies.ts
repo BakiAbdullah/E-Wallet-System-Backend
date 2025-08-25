@@ -11,6 +11,7 @@ export const setAuthCookieUtil = (res: Response, tokenInfo: IAuthTokens) => {
     res.cookie("accessToken", tokenInfo.accessToken, {
       httpOnly: true,
       secure: false,
+      // secure: true,
     });
   }
 
@@ -19,6 +20,7 @@ export const setAuthCookieUtil = (res: Response, tokenInfo: IAuthTokens) => {
     res.cookie("refreshToken", tokenInfo.refreshToken, {
       httpOnly: true,
       secure: false,
+      // secure: true,
     });
   }
 };

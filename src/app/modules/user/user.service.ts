@@ -79,27 +79,37 @@ const registerAgentWithWallet = async (payload: Partial<IUser>) => {
 
 // Retrieve all users with pagination, filtering, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(
+    User.find(),
+    query
+  );
+  const usersData = queryBuilder
+    .filter()
+    .search(usersSearchFields)
+    .sort()
+    .fields()
+    .paginate();
 
-   const queryBuilder = new QueryBuilder(
-     User.find(),
-     query
-   );
-   const usersData = queryBuilder
-     .filter()
-     .search(usersSearchFields)
-     .sort()
-     .fields()
-     .paginate();
+  const [data, meta] = await Promise.all([
+    usersData.build(),
+    queryBuilder.getMeta(),
+  ]);
 
-   const [data, meta] = await Promise.all([
-     usersData.build(),
-     queryBuilder.getMeta(),
-   ]);
+  return {
+    data,
+    meta,
+  };
+};
 
-   return {
-     data,
-     meta,
-   };
+// Retrieve user
+const getUserProfile = async (userId: string) => {
+  const user = await User.findById(userId).select("-password");
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  return {
+    data: user,
+  };
 };
 
 // Retrieve all agents
@@ -134,6 +144,7 @@ export const UserServices = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
+  getUserProfile,
   getAllAgents,
   approveAgent,
   rejectAgent,

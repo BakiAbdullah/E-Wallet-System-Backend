@@ -5,6 +5,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import httpStatus from "http-status-codes";
 import { UserServices } from "./user.service";
+import { JwtPayload } from "jsonwebtoken";
 
 // Register a user with a wallet
 const registerUserWithWallet = catchAsync(
@@ -45,6 +46,22 @@ const getAllUsers = catchAsync(
       success: true,
       message: "All users retrieved successfully",
       data: result
+    });
+  }
+);
+// Retrieve User Profile
+const getUserProfile = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const decodedToken = req.user as JwtPayload;
+    const result = await UserServices.getUserProfile(
+      decodedToken.userId as string
+    );
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User profile retrieved successfully",
+      data: result.data
     });
   }
 );
@@ -97,6 +114,7 @@ export const UserControllers = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
+  getUserProfile,
   getAllAgents,
   approveAgent,
   rejectAgent,
