@@ -112,12 +112,6 @@ const getUserProfile = async (userId: string) => {
   };
 };
 
-// Retrieve all agents
-const getAllAgents = async () => {
-  const users = await User.find({ role: Role.AGENT }).select("-password");
-  return users;
-};
-
 // Approve an agent
 const approveAgent = async (agentId: string) => {
   const agent = await User.findById(agentId);
@@ -145,7 +139,6 @@ export const UserServices = {
   registerAgentWithWallet,
   getAllUsers,
   getUserProfile,
-  getAllAgents,
   approveAgent,
   rejectAgent,
 };

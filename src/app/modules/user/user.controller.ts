@@ -96,26 +96,11 @@ const rejectAgent = catchAsync(
   }
 );
 
-// Retrieve all agents
-const getAllAgents = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const result = await UserServices.getAllAgents();
-
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "All Agents retrieved successfully",
-      data: result
-    });
-  }
-);
-
 export const UserControllers = {
   registerUserWithWallet,
   registerAgentWithWallet,
   getAllUsers,
   getUserProfile,
-  getAllAgents,
   approveAgent,
   rejectAgent,
 };
