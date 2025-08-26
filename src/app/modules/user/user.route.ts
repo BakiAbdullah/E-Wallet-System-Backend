@@ -19,6 +19,17 @@ router.get(
   UserControllers.getUserProfile
 );
 
+router.patch(
+  "/block/:userId",
+  checkAuth(Role.ADMIN),
+  UserControllers.blockUser
+);
+router.patch(
+  "/unblock/:userId",
+  checkAuth(Role.ADMIN),
+  UserControllers.unblockUser
+);
+
 // Agent routes
 router.post(
   "/register-agent",
@@ -26,14 +37,14 @@ router.post(
   UserControllers.registerAgentWithWallet
 );
 router.patch(
-  "/agent/:id/approve",
+  "/agent/toggle-approval/:agentId",
   checkAuth(Role.ADMIN),
-  UserControllers.approveAgent
+  UserControllers.toggleAgentApproval
 );
 router.patch(
-  "/agent/:id/reject",
+  "/agent/verify/:agentId",
   checkAuth(Role.ADMIN),
-  UserControllers.rejectAgent
+  UserControllers.verifyAgent
 );
 
 export const UserRoutes = router;
