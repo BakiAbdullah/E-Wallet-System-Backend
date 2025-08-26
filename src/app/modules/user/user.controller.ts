@@ -45,7 +45,7 @@ const getAllUsers = catchAsync(
       statusCode: httpStatus.OK,
       success: true,
       message: "All users retrieved successfully",
-      data: result
+      data: result,
     });
   }
 );
@@ -61,36 +61,68 @@ const getUserProfile = catchAsync(
       statusCode: httpStatus.OK,
       success: true,
       message: "User profile retrieved successfully",
-      data: result.data
+      data: result.data,
     });
   }
 );
 
-// Approve an agent to perform actions
-const approveAgent = catchAsync(
+// Block a user to perform actions
+const blockUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const agentId = req.params.id;
-    const result = await UserServices.approveAgent(agentId);
+    const userId = req.params.userId;
+    const result = await UserServices.blockUser(userId);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Agent approved successfully!",
+      message: "User Blocked!!",
+      data: result,
+    });
+  }
+);
+// Un Block a user
+const unblockUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const userId = req.params.userId;
+    const result = await UserServices.unblockUser(userId);
+
+    sendResponse(res, {
+      statusCode: httpStatus.OK,
+      success: true,
+      message: "User Unblocked!!",
       data: result,
     });
   }
 );
 
-// Reject an agent
-const rejectAgent = catchAsync(
+// Approve an agent to perform actions
+const toggleAgentApproval = catchAsync(async (req, res) => {
+  const { agentId } = req.params;
+
+  const result = await UserServices.toggleAgentApproval(agentId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Agent ${
+      result.isApproved ? "approved" : "rejected"
+    } successfully`,
+    data: result,
+  });
+});
+
+// Verify an agent
+const verifyAgent = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const agentId = req.params.id;
-    const result = await UserServices.rejectAgent(agentId);
+    const { agentId } = req.params;
+    const result = await UserServices.verifyAgent(agentId);
 
     sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Agent Rejected!",
+      message: `Agent ${
+        result.isVerified ? "verified" : "rejected"
+      } successfully`,
       data: result,
     });
   }
@@ -101,6 +133,8 @@ export const UserControllers = {
   registerAgentWithWallet,
   getAllUsers,
   getUserProfile,
-  approveAgent,
-  rejectAgent,
+  toggleAgentApproval,
+  blockUser,
+  unblockUser,
+  verifyAgent,
 };

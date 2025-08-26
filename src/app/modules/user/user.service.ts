@@ -1,5 +1,5 @@
 import AppError from "../../errors/AppError";
-import { IUser, Role } from "./user.interface";
+import { IUser, Role, UserStatus } from "./user.interface";
 import { User } from "./user.model";
 import httpStatus from "http-status-codes";
 import bcryptjs from "bcryptjs";
@@ -79,10 +79,7 @@ const registerAgentWithWallet = async (payload: Partial<IUser>) => {
 
 // Retrieve all users with pagination, filtering, and sorting
 const getAllUsers = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(
-    User.find(),
-    query
-  );
+  const queryBuilder = new QueryBuilder(User.find(), query);
   const usersData = queryBuilder
     .filter()
     .search(usersSearchFields)
@@ -112,24 +109,47 @@ const getUserProfile = async (userId: string) => {
   };
 };
 
+// Block a user >>>>
+const blockUser = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  user.status = UserStatus.BLOCKED;
+  await user.save();
+  return user;
+};
+// Un Block a user >>>>
+const unblockUser = async (userId: string) => {
+  const user = await User.findById(userId);
+  if (!user) {
+    throw new AppError(httpStatus.NOT_FOUND, "User not found");
+  }
+  user.status = UserStatus.ACTIVE;
+  await user.save();
+  return user;
+};
+
 // Approve an agent
-const approveAgent = async (agentId: string) => {
+const toggleAgentApproval = async (agentId: string) => {
   const agent = await User.findById(agentId);
   if (!agent) {
     throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
   }
-  agent.isApproved = true;
+
+  agent.isApproved = !agent.isApproved; // ✅ auto toggle
   await agent.save();
+
   return agent;
 };
 
-// Reject an agent
-const rejectAgent = async (agentId: string) => {
+// Verify an agent
+const verifyAgent = async (agentId: string) => {
   const agent = await User.findById(agentId);
   if (!agent) {
     throw new AppError(httpStatus.NOT_FOUND, "Agent not found");
   }
-  agent.isApproved = false;
+  agent.isVerified = !agent.isVerified;
   await agent.save();
   return agent;
 };
@@ -139,6 +159,8 @@ export const UserServices = {
   registerAgentWithWallet,
   getAllUsers,
   getUserProfile,
-  approveAgent,
-  rejectAgent,
+  blockUser,
+  toggleAgentApproval,
+  unblockUser,
+  verifyAgent,
 };
