@@ -58,7 +58,7 @@ const getUserTransactionHistory = async (walletId: string, query: Record<string,
   };
 };
 
-// Authenticated user transaction history retrieval
+// Authenticated users Own transaction history retrieval
 const getMyTransactionHistory = async (userId: string) => {
   const result = await Transaction.find({ receiver: userId })
     .populate("receiver", "name email role -_id")

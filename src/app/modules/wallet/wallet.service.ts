@@ -14,131 +14,244 @@ import { IUser } from "../user/user.interface";
 import { getTransactionId } from "../../utils/getTransactionID";
 import { User } from "../user/user.model";
 
-// Top up a user's wallet
+// // Top up a user's wallet
+// const topUpWallet = async (amount: number, agentId: string, userId: string) => {
+//   const transactionId = getTransactionId();
+
+//   if (!amount || amount <= 0) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       "Amount must be greater than zero"
+//     );
+//   }
+
+//   const session = await mongoose.startSession();
+//   try {
+//     session.startTransaction();
+
+//     // user wallet
+//     const wallet = await Wallet.findOne({ user: userId })
+//       .populate<{ user: IUser }>("user")
+//       .session(session);
+
+//     // agent wallet
+//     const agentWallet = await Wallet.findOne({ user: agentId })
+//       .populate<{ user: IUser }>("user")
+//       .session(session);
+
+//     if (!wallet) {
+//       throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+//     }
+
+//     if (!agentWallet) {
+//       throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+//     }
+
+//     // Check if the user is an agent and not approved
+//     if (wallet.user.role === Role.AGENT && wallet.user.isApproved === false) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Your agent account is not approved yet, you can not perform any transactions!"
+//       );
+//     }
+
+//     //! User can not top up Agent's wallet
+//     // if (
+//     //   wallet.user.role === Role.USER &&
+//     //   agentWallet.user?.role === Role.AGENT
+//     // ) {
+//     //   throw new AppError(
+//     //     httpStatus.FORBIDDEN,
+//     //     "Users are not allowed to top up an agent's wallet!"
+//     //   );
+//     // }
+
+//     if (wallet.isBlocked === WalletStatus.BLOCKED) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Wallet is blocked, you can not Add Money!"
+//       );
+//     }
+
+//     if (wallet.balance - amount < 0) {
+//       throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance!");
+//     }
+
+//     // Check if agent wallet is blocked
+//     if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Agent wallet is blocked, you can not withdraw money!"
+//       );
+//     }
+
+//     // 1. Receiver (যে টাকা পাবে) সে যদি Agent হয় → disallow
+//     if (wallet.user.role === Role.AGENT) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "You cannot top up an agent's wallet!"
+//       );
+//     }
+
+//     // 2. Agent must be the sender
+//     if (agentWallet.user.role !== Role.AGENT) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Only agents can perform top-ups!"
+//       );
+//     }
+
+//     if (
+//       wallet.user.role === Role.USER &&
+//       agentWallet.user.role === Role.AGENT
+//     ) {
+//       // টপ আপ সবসময় USER এর wallet এ হবে,
+//       // Agent শুধু transaction facilitate করবে
+//       // তাই এখানে agent এর balance increase হবে না।
+
+//       // Rule enforce
+//       // Ensure: আমরা user এর wallet এ টাকা যোগ করছি, agent এর টাতে না।
+
+//       // Agent এর wallet untouched থাকবে
+//       // Top up receiver's wallet
+//       wallet.balance += amount;
+//       agentWallet.balance -= amount;
+//       await wallet.save();
+//     }
+
+//     // If agent is not topping up their own wallet
+//     if (agentWallet._id.toString() !== wallet._id.toString()) {
+//       // Subtract from agent's wallet
+//       agentWallet.balance -= amount;
+
+//       // Check for insufficient balance
+//       if (agentWallet.balance < 0) {
+//         throw new AppError(
+//           httpStatus.BAD_REQUEST,
+//           "Agent has insufficient balance!"
+//         );
+//       }
+
+//       await agentWallet.save({ session });
+//     }
+//     await wallet.save({ session });
+
+//     // Create a transaction record
+//     await Transaction.create(
+//       [
+//         {
+//           wallet: wallet._id,
+//           newBalance: wallet.balance,
+//           amount: amount,
+//           transactionType: TransactionType.TOP_UP,
+//           transactionId: transactionId,
+//           sender: agentId,
+//           receiver: userId, // In case of top-up, sender and receiver are the same
+//           status: TransactionStatus.SUCCESS,
+//         },
+//       ],
+//       { new: true, runValidators: true, session }
+//     );
+
+//     await session.commitTransaction();
+//     session.endSession();
+
+//     return { message: "Top-up successful", balance: wallet.balance };
+//   } catch (error: any) {
+//     await session.abortTransaction();
+//     throw new AppError(
+//       httpStatus.INTERNAL_SERVER_ERROR,
+//       "Failed to top up wallet",
+//       error.message
+//     );
+//   }
+// };
+
+
+// Top up a user's wallet (via Agent)
 const topUpWallet = async (amount: number, agentId: string, userId: string) => {
-  const transactionId = getTransactionId();
+  const transactionId1 = getTransactionId();
+  const transactionId2 = getTransactionId();
 
   if (!amount || amount <= 0) {
-    throw new AppError(
-      httpStatus.BAD_REQUEST,
-      "Amount must be greater than zero"
-    );
+    throw new AppError(httpStatus.BAD_REQUEST, "Amount must be greater than zero");
   }
 
   const session = await mongoose.startSession();
   try {
     session.startTransaction();
 
+    // Find user wallet
     const wallet = await Wallet.findOne({ user: userId })
       .populate<{ user: IUser }>("user")
       .session(session);
-    // agent wallet
+
+
+
+    // Find agent wallet
     const agentWallet = await Wallet.findOne({ user: agentId })
       .populate<{ user: IUser }>("user")
       .session(session);
-    if (!agentWallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+
+    if (!wallet) throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+    if (!agentWallet) throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+
+    // Check agent validity
+    if (agentWallet.user.role !== Role.AGENT) {
+      throw new AppError(httpStatus.FORBIDDEN, "Only agents can perform top-up!");
     }
-
-    if (!wallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found");
+    if (agentWallet.user.isApproved === false) {
+      throw new AppError(httpStatus.FORBIDDEN, "Agent is not approved yet!");
     }
-
-    // Check if the user is an agent and not approved
-    if (wallet.user.role === Role.AGENT && wallet.user.isApproved === false) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Your agent account is not approved yet, you can not perform any transactions!"
-      );
-    }
-
-    //! User can not top up Agent's wallet
-    // if (
-    //   wallet.user.role === Role.USER &&
-    //   agentWallet.user?.role === Role.AGENT
-    // ) {
-    //   throw new AppError(
-    //     httpStatus.FORBIDDEN,
-    //     "Users are not allowed to top up an agent's wallet!"
-    //   );
-    // }
-
-    if (wallet.isBlocked === WalletStatus.BLOCKED) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Wallet is blocked, you can not Add Money!"
-      );
-    }
-
-    if (wallet.balance - amount < 0) {
-      throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance!");
-    }
-
-    // Check if agent wallet is blocked
     if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Agent wallet is blocked, you can not withdraw money!"
-      );
+      throw new AppError(httpStatus.FORBIDDEN, "Agent wallet is blocked!");
     }
 
-    // New Rule to Top up from Agent and prevent user to top up Agent's wallet
+    // Check user wallet status
+    if (wallet.isBlocked === WalletStatus.BLOCKED) {
+      throw new AppError(httpStatus.FORBIDDEN, "User wallet is blocked, can not Add Money!");
+    }
     if (wallet.user.role === Role.AGENT) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Users are not allowed to top up an agent's wallet!"
-      );
+      throw new AppError(httpStatus.FORBIDDEN, "Cannot top-up an Agent’s wallet!");
     }
 
-    if (
-      wallet.user.role === Role.USER &&
-      agentWallet.user.role === Role.AGENT
-    ) {
-      // টপ আপ সবসময় USER এর wallet এ হবে,
-      // Agent শুধু transaction facilitate করবে
-      // তাই এখানে agent এর balance increase হবে না।
-
-      // Rule enforce
-      // Ensure: আমরা user এর wallet এ টাকা যোগ করছি, agent এর টাতে না।
-
-      // Agent এর wallet untouched থাকবে
-      // Top up receiver's wallet
-      wallet.balance += amount;
-      await wallet.save();
+    // Agent must have sufficient balance
+    if (agentWallet.balance < amount) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Agent has insufficient balance!");
     }
 
-    // If agent is not topping up their own wallet
-    if (agentWallet._id.toString() !== wallet._id.toString()) {
-      // Subtract from agent's wallet
-      agentWallet.balance -= amount;
+    // ✅ Perform balance changes
+    wallet.balance += amount;
+    agentWallet.balance -= amount;
 
-      // Check for insufficient balance
-      if (agentWallet.balance < 0) {
-        throw new AppError(
-          httpStatus.BAD_REQUEST,
-          "Agent has insufficient balance!"
-        );
-      }
-
-      await agentWallet.save({ session });
-    }
     await wallet.save({ session });
+    await agentWallet.save({ session });
 
-    // Create a transaction record
-    await Transaction.create(
+    // ✅ Create Transaction
+    await Transaction.insertMany(
       [
         {
           wallet: wallet._id,
           newBalance: wallet.balance,
-          amount: amount,
+          amount,
           transactionType: TransactionType.TOP_UP,
-          transactionId: transactionId,
-          sender: agentId,
-          receiver: userId, // In case of top-up, sender and receiver are the same
+          transactionId: transactionId1,
+          sender: agentId, // Agent
+          receiver: userId, // User
+          status: TransactionStatus.SUCCESS,
+        },
+        {
+          wallet: agentWallet._id,
+          newBalance: agentWallet.balance,
+          amount,
+          transactionType: TransactionType.TOP_UP,
+          transactionId: transactionId2,
+          sender: agentId, // Agent
+          receiver: userId, // User
           status: TransactionStatus.SUCCESS,
         },
       ],
-      { new: true, runValidators: true, session }
+      { session }
     );
 
     await session.commitTransaction();
@@ -147,21 +260,130 @@ const topUpWallet = async (amount: number, agentId: string, userId: string) => {
     return { message: "Top-up successful", balance: wallet.balance };
   } catch (error: any) {
     await session.abortTransaction();
-    throw new AppError(
-      httpStatus.INTERNAL_SERVER_ERROR,
-      "Failed to top up wallet",
-      error.message
-    );
+    session.endSession();
+    throw new AppError(httpStatus.INTERNAL_SERVER_ERROR, "Failed to top up wallet", error.message);
   }
 };
 
-// Withdraw money from a user's wallet
+// // Withdraw money from a user's wallet
+// const withdrawFromWallet = async (
+//   amount: number,
+//   agentId: string,
+//   userId: string
+// ) => {
+//   const transactionId = getTransactionId();
+
+//   if (!amount || amount <= 0) {
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       "Amount must be greater than zero"
+//     );
+//   }
+
+//   const session = await mongoose.startSession();
+
+//   try {
+//     session.startTransaction();
+
+//     const userWallet = await Wallet.findOne({ user: userId }).session(session);
+//     const agentWallet = await Wallet.findOne({ user: agentId }).session(
+//       session
+//     );
+
+//     if (!agentWallet) {
+//       throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
+//     }
+
+//     if (!userWallet) {
+//       throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
+//     }
+
+//     if (!amount || amount <= 0) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "Amount must be greater than zero"
+//       );
+//     }
+
+//     if (userWallet.balance < amount || userWallet.balance === 0) {
+//       throw new AppError(
+//         httpStatus.BAD_REQUEST,
+//         "You do not have sufficient balance!"
+//       );
+//     }
+//     if (!Object.values(Role)) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "You are not authorized to withdraw money!"
+//       );
+//     }
+
+//     if (userWallet.isBlocked === WalletStatus.BLOCKED) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Wallet is blocked, you can not withdraw money!"
+//       );
+//     }
+
+//     // Check if agent wallet is blocked
+//     if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "Agent wallet is blocked, you can not withdraw money!"
+//       );
+//     }
+
+//     // Check if the agent and user are the same by comparing IDs
+//     if (userId === agentId) {
+//       throw new AppError(
+//         httpStatus.FORBIDDEN,
+//         "You can not withdraw money to your own wallet!"
+//       );
+//     }
+
+//     // Update wallet balance
+//     userWallet.balance -= amount;
+//     agentWallet.balance += amount;
+//     await userWallet.save({ session });
+//     await agentWallet.save({ session });
+
+//     // Create a transaction record (optional, if you want to track transactions)
+//     await Transaction.create(
+//       [
+//         {
+//           wallet: userWallet._id,
+//           newBalance: userWallet.balance,
+//           amount: amount,
+//           transactionType: TransactionType.WITHDRAW,
+//           transactionId: transactionId,
+//           sender: userId,
+//           receiver: agentId, // In case of withdrawal, sender and receiver are the same
+//           status: TransactionStatus.SUCCESS,
+//         },
+//       ],
+//       { new: true, runValidators: true, session }
+//     );
+
+//     await session.commitTransaction();
+//     session.endSession();
+//     return { message: "Cash Out successful", balance: userWallet.balance };
+//   } catch (error: any) {
+//     await session.abortTransaction();
+//     throw new AppError(
+//       httpStatus.BAD_REQUEST,
+//       "Failed to Cash Out or withdraw money!",
+//       error.message
+//     );
+//   }
+// };
+
 const withdrawFromWallet = async (
   amount: number,
   agentId: string,
-  userId: string
+  userId: string,
 ) => {
-  const transactionId = getTransactionId();
+  const transactionId1 = getTransactionId();
+  const transactionId2 = getTransactionId();
 
   if (!amount || amount <= 0) {
     throw new AppError(
@@ -180,96 +402,82 @@ const withdrawFromWallet = async (
       session
     );
 
-    if (!agentWallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "Agent wallet not found");
-    }
-
-    if (!userWallet) {
-      throw new AppError(httpStatus.NOT_FOUND, "User wallet not found");
-    }
-
-    if (!amount || amount <= 0) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        "Amount must be greater than zero"
-      );
-    }
-
-    if (userWallet.balance < amount || userWallet.balance === 0) {
-      throw new AppError(
-        httpStatus.BAD_REQUEST,
-        "You do not have sufficient balance!"
-      );
-    }
-    if (!Object.values(Role)) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "You are not authorized to withdraw money!"
-      );
+    if (!userWallet || !agentWallet) {
+      throw new AppError(httpStatus.NOT_FOUND, "Wallet not found!");
     }
 
     if (userWallet.isBlocked === WalletStatus.BLOCKED) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Wallet is blocked, you can not withdraw money!"
-      );
+      throw new AppError(httpStatus.FORBIDDEN, "User wallet is blocked!");
     }
 
-    // Check if agent wallet is blocked
     if (agentWallet.isBlocked === WalletStatus.BLOCKED) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "Agent wallet is blocked, you can not withdraw money!"
-      );
+      throw new AppError(httpStatus.FORBIDDEN, "Agent wallet is blocked!");
     }
 
-    // Check if the agent and user are the same by comparing IDs
-    if (userId === agentId) {
-      throw new AppError(
-        httpStatus.FORBIDDEN,
-        "You can not withdraw money to your own wallet!"
-      );
+    if (userWallet.balance < amount) {
+      throw new AppError(httpStatus.BAD_REQUEST, "Insufficient balance!");
     }
 
-    // Update wallet balance
+    // Deduction of money
     userWallet.balance -= amount;
     agentWallet.balance += amount;
+
     await userWallet.save({ session });
     await agentWallet.save({ session });
 
-    // Create a transaction record (optional, if you want to track transactions)
-    await Transaction.create(
+    // sender / receiver আলাদা করে ঠিক করা
+    const sender = userId; // সবসময় user থেকে টাকা কাটা হবে
+    const receiver = agentId; // সবসময় agent টাকা পাবে
+
+    // Transaction insert
+    await Transaction.insertMany(
       [
         {
           wallet: userWallet._id,
           newBalance: userWallet.balance,
-          amount: amount,
+          amount,
           transactionType: TransactionType.WITHDRAW,
-          transactionId: transactionId,
-          sender: userId,
-          receiver: agentId, // In case of withdrawal, sender and receiver are the same
+          transactionId: transactionId1,
+        
+          sender,
+          receiver,
+          status: TransactionStatus.SUCCESS,
+        },
+        {
+          wallet: agentWallet._id,
+          newBalance: agentWallet.balance,
+          amount,
+          transactionType: TransactionType.WITHDRAW,
+          transactionId: transactionId2,
+        
+          sender,
+          receiver,
           status: TransactionStatus.SUCCESS,
         },
       ],
-      { new: true, runValidators: true, session }
+      { session }
     );
 
     await session.commitTransaction();
     session.endSession();
-    return { message: "Cash Out successful", balance: userWallet.balance };
+
+    return { message: "Withdraw successful", balance: userWallet.balance };
   } catch (error: any) {
     await session.abortTransaction();
     throw new AppError(
       httpStatus.BAD_REQUEST,
-      "Failed to Cash Out or withdraw money!",
+      "Failed to withdraw money!",
       error.message
     );
   }
 };
 
+
+
+
 // Send money from one wallet to another
 const sendMoney = async (
-  senderUserId: string,   // 🔥 senderWalletId থেকে senderUserId করলাম
+  senderUserId: string, // 🔥 senderWalletId থেকে senderUserId করলাম
   recipient: string, // 🔥 email/phone আসবে
   amount: number
 ) => {
@@ -289,7 +497,9 @@ const sendMoney = async (
     session.startTransaction();
 
     // >>> Get sender's wallet
-    const senderWallet = await Wallet.findOne({ user: senderUserId }).session(session); // 🔥 userId দিয়ে খুঁজব
+    const senderWallet = await Wallet.findOne({ user: senderUserId }).session(
+      session
+    ); // 🔥 userId দিয়ে খুঁজব
 
     if (!senderWallet) {
       throw new AppError(httpStatus.NOT_FOUND, "Sender wallet not found");
@@ -305,7 +515,9 @@ const sendMoney = async (
     }
 
     // 🔥 Get recipient wallet
-    const recipientWallet = await Wallet.findOne({ user: recipientUser._id }).session(session);
+    const recipientWallet = await Wallet.findOne({
+      user: recipientUser._id,
+    }).session(session);
 
     if (!recipientWallet) {
       throw new AppError(httpStatus.NOT_FOUND, "Recipient wallet not found");
@@ -391,7 +603,6 @@ const sendMoney = async (
     );
   }
 };
-
 
 // Retrieve the authenticated user's wallet
 const getMyWallet = async (userId: string) => {

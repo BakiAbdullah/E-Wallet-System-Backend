@@ -25,7 +25,6 @@ router.post(
   validateRequest(createUserZodValidator),
   UserControllers.registerAgentWithWallet
 );
-router.get("/agents", UserControllers.getAllAgents);
 router.patch(
   "/agent/:id/approve",
   checkAuth(Role.ADMIN),
