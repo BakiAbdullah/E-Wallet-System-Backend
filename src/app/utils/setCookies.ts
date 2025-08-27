@@ -10,8 +10,9 @@ export const setAuthCookieUtil = (res: Response, tokenInfo: IAuthTokens) => {
     // Setting access token in browser cookies when user logs in.
     res.cookie("accessToken", tokenInfo.accessToken, {
       httpOnly: true,
-      secure: false,
-      // secure: true,
+      secure: true,
+      sameSite: "none", // >>> new line
+      // secure: false,
     });
   }
 
@@ -19,8 +20,9 @@ export const setAuthCookieUtil = (res: Response, tokenInfo: IAuthTokens) => {
     // Setting refresh token in browser cookies when user logs in.
     res.cookie("refreshToken", tokenInfo.refreshToken, {
       httpOnly: true,
-      secure: false,
-      // secure: true,
+      secure: true,
+      sameSite: "none", // >>> new line
+      // secure: false,
     });
   }
 };
